@@ -45,6 +45,27 @@ export function EditVertexPropertiesDialog({
   open,
   onOpenChange,
 }: EditVertexPropertiesDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {/*
+        The form state is captured from the vertex when the content mounts, so
+        the content is only mounted while the dialog is open. This ensures each
+        open starts with a fresh form for the currently selected vertex.
+      */}
+      {open ? (
+        <EditVertexPropertiesDialogContent
+          vertex={vertex}
+          onOpenChange={onOpenChange}
+        />
+      ) : null}
+    </Dialog>
+  );
+}
+
+function EditVertexPropertiesDialogContent({
+  vertex,
+  onOpenChange,
+}: Pick<EditVertexPropertiesDialogProps, "vertex" | "onOpenChange">) {
   const { updateVertexProperties, isPending } = useUpdateVertexProperties();
 
   const attributes = vertex.original.attributes;
@@ -80,59 +101,39 @@ export function EditVertexPropertiesDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit Properties — {vertex.displayName}</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          <form
-            id="edit-vertex-properties-form"
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
-            {editableEntries.map(([name, value]) => {
-              const label = labelByName.get(name) ?? name;
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Edit Properties — {vertex.displayName}</DialogTitle>
+      </DialogHeader>
+      <DialogBody>
+        <form
+          id="edit-vertex-properties-form"
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-4"
+        >
+          {editableEntries.map(([name, value]) => {
+            const label = labelByName.get(name) ?? name;
 
-              if (typeof value === "boolean") {
-                return (
-                  <Controller
-                    key={name}
-                    control={form.control}
-                    name={`properties.${name}`}
-                    render={({ field }) => (
-                      <div className="flex items-center justify-between">
-                        <Label>{label}</Label>
-                        <Switch
-                          checked={Boolean(field.value)}
-                          onCheckedChange={field.onChange}
-                        />
-                      </div>
-                    )}
-                  />
-                );
-              }
-
-              if (typeof value === "number") {
-                return (
-                  <Controller
-                    key={name}
-                    control={form.control}
-                    name={`properties.${name}`}
-                    render={({ field }) => (
-                      <InputField
-                        type="number"
-                        label={label}
-                        value={Number(field.value)}
-                        onChange={(next: number | null) =>
-                          field.onChange(next ?? 0)
-                        }
+            if (typeof value === "boolean") {
+              return (
+                <Controller
+                  key={name}
+                  control={form.control}
+                  name={`properties.${name}`}
+                  render={({ field }) => (
+                    <div className="flex items-center justify-between">
+                      <Label>{label}</Label>
+                      <Switch
+                        checked={Boolean(field.value)}
+                        onCheckedChange={field.onChange}
                       />
-                    )}
-                  />
-                );
-              }
+                    </div>
+                  )}
+                />
+              );
+            }
 
+            if (typeof value === "number") {
               return (
                 <Controller
                   key={name}
@@ -140,40 +141,58 @@ export function EditVertexPropertiesDialog({
                   name={`properties.${name}`}
                   render={({ field }) => (
                     <InputField
+                      type="number"
                       label={label}
-                      value={String(field.value ?? "")}
-                      onChange={field.onChange}
+                      value={Number(field.value)}
+                      onChange={(next: number | null) =>
+                        field.onChange(next ?? 0)
+                      }
                     />
                   )}
                 />
               );
-            })}
+            }
 
-            {readOnlyDateEntries.map(([name, value]) => (
-              <InputField
+            return (
+              <Controller
                 key={name}
-                label={labelByName.get(name) ?? name}
-                value={getDisplayValueForScalar(value)}
-                isDisabled
+                control={form.control}
+                name={`properties.${name}`}
+                render={({ field }) => (
+                  <InputField
+                    label={label}
+                    value={String(field.value ?? "")}
+                    onChange={field.onChange}
+                  />
+                )}
               />
-            ))}
-          </form>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            type="submit"
-            form="edit-vertex-properties-form"
-            disabled={isPending}
-          >
-            Save
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            );
+          })}
+
+          {readOnlyDateEntries.map(([name, value]) => (
+            <InputField
+              key={name}
+              label={labelByName.get(name) ?? name}
+              value={getDisplayValueForScalar(value)}
+              isDisabled
+            />
+          ))}
+        </form>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          type="submit"
+          form="edit-vertex-properties-form"
+          disabled={isPending}
+        >
+          Save
+        </Button>
+      </DialogFooter>
+    </DialogContent>
   );
 }
 
